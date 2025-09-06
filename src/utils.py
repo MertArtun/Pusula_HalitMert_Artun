@@ -296,6 +296,28 @@ def safe_to_numeric(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series, errors='coerce')
 
 
+def normalize_text_token(token: str) -> str:
+    """
+    Metin token'ını normalize eder (Türkçe karakter dönüşümü ve temizlik).
+    
+    Args:
+        token (str): Normalize edilecek token
+        
+    Returns:
+        str: Normalize edilmiş token
+        
+    Examples:
+        >>> normalize_text_token("POLEN")
+        "polen"
+        >>> normalize_text_token("Yer Fıstığı")
+        "yer fistigi"
+    """
+    s = str(token).strip().lower()
+    s = (s.replace("ı","i").replace("ş","s").replace("ğ","g")
+           .replace("ö","o").replace("ü","u").replace("ç","c"))
+    return " ".join(s.split())
+
+
 def ensure_directory_exists(directory_path: str) -> None:
     """
     Dizinin var olduğundan emin olur, yoksa oluşturur.

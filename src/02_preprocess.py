@@ -17,7 +17,7 @@ import sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from sklearn.impute import SimpleImputer
+from sklearn.impute import SimpleImputer, KNNImputer
 
 # utils modülünü import et
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -125,12 +125,13 @@ def create_clean_minimal(df: pd.DataFrame) -> pd.DataFrame:
     return df_clean
 
 
-def apply_imputation(df: pd.DataFrame) -> pd.DataFrame:
+def apply_imputation(df: pd.DataFrame, imputer_type: str = "median") -> pd.DataFrame:
     """
     Eksik değer işleme (imputation) uygular.
     
     Args:
         df (pd.DataFrame): Temizlenmiş veri
+        imputer_type (str): "median" veya "knn"
         
     Returns:
         pd.DataFrame: Imputation uygulanmış veri
@@ -139,19 +140,37 @@ def apply_imputation(df: pd.DataFrame) -> pd.DataFrame:
     
     df_imputed = df.copy()
     
-    # Sayısal sütunlar için median imputation
+    # Sayısal sütunlar için imputation
     numeric_columns = df_imputed.select_dtypes(include=[np.number]).columns
     numeric_columns = [col for col in numeric_columns if col != 'HastaNo']  # ID sütununu hariç tut
     
     if len(numeric_columns) > 0:
-        print(f"   🔢 Sayısal sütunlar için median imputation: {list(numeric_columns)}")
+        if imputer_type == "median":
+            print(f"   🔢 Sayısal sütunlar için median imputation: {list(numeric_columns)}")
+            
+            for col in numeric_columns:
+                missing_count = df_imputed[col].isnull().sum()
+                if missing_count > 0:
+                    median_value = df_imputed[col].median()
+                    df_imputed[col] = df_imputed[col].fillna(median_value)
+                    print(f"      - {col}: {missing_count} eksik değer {median_value} ile dolduruldu")
         
-        for col in numeric_columns:
-            missing_count = df_imputed[col].isnull().sum()
-            if missing_count > 0:
-                median_value = df_imputed[col].median()
-                df_imputed[col].fillna(median_value, inplace=True)
-                print(f"      - {col}: {missing_count} eksik değer {median_value} ile dolduruldu")
+        elif imputer_type == "knn":
+            print(f"   🔢 Sayısal sütunlar için KNN imputation: {list(numeric_columns)}")
+            
+            # Eksik değeri olan sütunları kontrol et
+            missing_cols = [col for col in numeric_columns if df_imputed[col].isnull().sum() > 0]
+            
+            if missing_cols:
+                # KNNImputer uygula
+                knn_imputer = KNNImputer(n_neighbors=5, weights="uniform")
+                df_imputed[numeric_columns] = knn_imputer.fit_transform(df_imputed[numeric_columns])
+                
+                for col in missing_cols:
+                    missing_count = df[col].isnull().sum()  # Orijinal eksik sayısı
+                    print(f"      - {col}: {missing_count} eksik değer KNN ile dolduruldu")
+            else:
+                print(f"      - Sayısal sütunlarda eksik değer yok")
     
     # Kategorik sütunlar için "Bilinmiyor" ile doldur
     categorical_columns = [
@@ -165,7 +184,7 @@ def apply_imputation(df: pd.DataFrame) -> pd.DataFrame:
         for col in existing_cat_cols:
             missing_count = df_imputed[col].isnull().sum()
             if missing_count > 0:
-                df_imputed[col].fillna('Bilinmiyor', inplace=True)
+                df_imputed[col] = df_imputed[col].fillna('Bilinmiyor')
                 print(f"      - {col}: {missing_count} eksik değer 'Bilinmiyor' ile dolduruldu")
     
     # Çoklu değerli sütunlar için boş string ile doldur
@@ -178,7 +197,7 @@ def apply_imputation(df: pd.DataFrame) -> pd.DataFrame:
         for col in existing_multi_cols:
             missing_count = df_imputed[col].isnull().sum()
             if missing_count > 0:
-                df_imputed[col].fillna('', inplace=True)
+                df_imputed[col] = df_imputed[col].fillna('')
                 print(f"      - {col}: {missing_count} eksik değer boş string ile dolduruldu")
     
     # Diğer string sütunları için "Bilinmiyor" ile doldur
@@ -192,7 +211,7 @@ def apply_imputation(df: pd.DataFrame) -> pd.DataFrame:
         for col in remaining_string_cols:
             missing_count = df_imputed[col].isnull().sum()
             if missing_count > 0:
-                df_imputed[col].fillna('Bilinmiyor', inplace=True)
+                df_imputed[col] = df_imputed[col].fillna('Bilinmiyor')
                 print(f"      - {col}: {missing_count} eksik değer 'Bilinmiyor' ile dolduruldu")
     
     return df_imputed
@@ -305,11 +324,19 @@ def main():
         help='Excel sheet adı (varsayılan: Sheet1)'
     )
     
+    parser.add_argument(
+        '--imputer',
+        choices=['median', 'knn'],
+        default='median',
+        help='Sayısal eksik değer doldurma yöntemi (varsayılan: median)'
+    )
+    
     args = parser.parse_args()
     
     print("🚀 Fiziksel Tıp & Rehabilitasyon Veri Temizleme Script'i Başlatılıyor...")
     print(f"📁 Excel Dosyası: {args.excel_path}")
     print(f"📄 Sheet: {args.sheet}")
+    print(f"🔧 Imputer: {args.imputer}")
     
     # Çıktı dizinini hazırla
     output_dir = 'data/processed'
@@ -325,7 +352,7 @@ def main():
     df_clean = create_clean_minimal(df_transformed)
     
     # Model-ready veri seti için imputation uygula
-    df_model_ready = apply_imputation(df_clean)
+    df_model_ready = apply_imputation(df_clean, args.imputer)
     
     # Doğrulama
     validate_processed_data(df_clean, df_model_ready)

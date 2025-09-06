@@ -20,12 +20,16 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from scipy.sparse import hstack
 
 # utils modülünü import et
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils import (
     create_multilabel_features,
-    ensure_directory_exists
+    ensure_directory_exists,
+    normalize_text_token,
+    split_list
 )
 
 
@@ -49,6 +53,40 @@ def load_data(csv_path: str) -> pd.DataFrame:
     except Exception as e:
         print(f"❌ Hata: CSV dosyası okunurken hata oluştu: {e}")
         sys.exit(1)
+
+
+def collapse_rare(series: pd.Series, min_freq: int = 10, other_label: str = "Diger") -> pd.Series:
+    """
+    Nadir kategorileri belirtilen etiket altında birleştirir.
+    
+    Args:
+        series (pd.Series): Kategorik seri
+        min_freq (int): Minimum frekans eşiği
+        other_label (str): Nadir kategoriler için etiket
+        
+    Returns:
+        pd.Series: Nadir kategoriler birleştirilmiş seri
+    """
+    vc = series.value_counts(dropna=False)
+    keep = set(vc[vc >= min_freq].index)
+    return series.apply(lambda x: x if x in keep else other_label)
+
+
+def join_tokens(series: pd.Series) -> list:
+    """
+    Çoklu değerli seriyi normalize edilmiş token'larla birleştirir.
+    
+    Args:
+        series (pd.Series): Çoklu değerli seri
+        
+    Returns:
+        list: Her satır için normalize edilmiş token'lar birleştirilmiş string listesi
+    """
+    docs = []
+    for v in series.fillna(""):
+        toks = [normalize_text_token(t) for t in split_list(v)]
+        docs.append(" ".join(toks))
+    return docs
 
 
 def create_multilabel_features_all(df: pd.DataFrame, top_k: int = 50) -> tuple:
@@ -242,24 +280,75 @@ def get_feature_names(preprocessor: ColumnTransformer, column_info: dict) -> lis
     return feature_names
 
 
-def build_features(df: pd.DataFrame, top_k: int = 50) -> tuple:
+def build_features(df: pd.DataFrame, top_k: int = 50, min_freq: int = 10, text_mode: str = "mlbin") -> tuple:
     """
     Özellik matrisini oluşturur.
     
     Args:
         df (pd.DataFrame): Temizlenmiş veri
         top_k (int): Çoklu değerli alanlar için top-K
+        min_freq (int): Nadir kategoriler için minimum frekans
+        text_mode (str): "mlbin" veya "tfidf"
         
     Returns:
         tuple: (X, y, feature_names, column_info)
     """
     print("🏗️  Özellik matrisi oluşturuluyor...")
     
-    # Çoklu değerli alanlar için binary özellikler oluştur
-    df_with_ml, ml_columns = create_multilabel_features_all(df, top_k)
+    df_processed = df.copy()
     
-    # Sütunları kategorize et
-    column_info = prepare_feature_columns(df_with_ml, ml_columns)
+    # Nadir kategorileri birleştir
+    print(f"🔧 Nadir kategoriler birleştiriliyor (min_freq={min_freq})...")
+    base_cat = ["Cinsiyet", "KanGrubu", "Uyruk", "Bolum", "TedaviAdi"]
+    for c in base_cat:
+        if c in df_processed.columns:
+            original_unique = df_processed[c].nunique()
+            df_processed[c] = collapse_rare(df_processed[c], min_freq=min_freq)
+            new_unique = df_processed[c].nunique()
+            print(f"   📊 {c}: {original_unique} → {new_unique} kategori")
+    
+    # Text mode'a göre özellik çıkarma
+    if text_mode == "mlbin":
+        print("🔧 Multi-label binary özellikler oluşturuluyor...")
+        # Çoklu değerli alanlar için binary özellikler oluştur (normalize edilmiş)
+        df_with_ml, ml_columns = create_multilabel_features_all(df_processed, top_k)
+        
+        # Sütunları kategorize et
+        column_info = prepare_feature_columns(df_with_ml, ml_columns)
+        
+        # TF-IDF kullanmayacağız
+        tfidf_features = None
+        tfidf_feature_names = []
+        
+    elif text_mode == "tfidf":
+        print("🔧 TF-IDF özellikleri oluşturuluyor (sadece Tanılar için)...")
+        # Sadece diğer çoklu değerli alanlar için ML binary
+        multi_cols_except_tanilar = ['KronikHastalik', 'Alerji', 'UygulamaYerleri']
+        df_with_ml = df_processed.copy()
+        ml_columns = []
+        
+        for col in multi_cols_except_tanilar:
+            if col in df_with_ml.columns:
+                print(f"   📋 {col} için binary özellikler oluşturuluyor...")
+                df_with_ml, new_cols = create_multilabel_features(
+                    df_with_ml, col, top_k=top_k, prefix="ML"
+                )
+                ml_columns.extend(new_cols)
+        
+        # Tanılar için TF-IDF
+        if 'Tanilar' in df_processed.columns:
+            print("   📝 Tanılar için TF-IDF özellikleri oluşturuluyor...")
+            docs = join_tokens(df_processed["Tanilar"])
+            tfidf = TfidfVectorizer(ngram_range=(1,2), min_df=5)
+            tfidf_features = tfidf.fit_transform(docs)
+            tfidf_feature_names = [f"tfidf_{name}" for name in tfidf.get_feature_names_out()]
+            print(f"      ✅ {len(tfidf_feature_names)} TF-IDF özellik oluşturuldu")
+        else:
+            tfidf_features = None
+            tfidf_feature_names = []
+        
+        # Sütunları kategorize et
+        column_info = prepare_feature_columns(df_with_ml, ml_columns)
     
     # Hedef değişkeni ayır
     if column_info['target'] in df_with_ml.columns:
@@ -280,13 +369,28 @@ def build_features(df: pd.DataFrame, top_k: int = 50) -> tuple:
     
     # Pipeline oluştur ve uygula
     preprocessor = create_feature_pipeline(column_info)
-    X = preprocessor.fit_transform(X_raw)
     
-    # Özellik isimlerini oluştur
-    feature_names = get_feature_names(preprocessor, column_info)
+    # Sparse matrix desteği için sparse_threshold ayarla
+    if text_mode == "tfidf" and tfidf_features is not None:
+        preprocessor.sparse_threshold = 1.0
+    
+    X_base = preprocessor.fit_transform(X_raw)
+    
+    # TF-IDF features varsa birleştir
+    if text_mode == "tfidf" and tfidf_features is not None:
+        print("🔗 TF-IDF özelliklerini ana matris ile birleştiriliyor...")
+        X = hstack([X_base, tfidf_features])
+        
+        # Özellik isimlerini birleştir
+        base_feature_names = get_feature_names(preprocessor, column_info)
+        feature_names = base_feature_names + tfidf_feature_names
+    else:
+        X = X_base
+        feature_names = get_feature_names(preprocessor, column_info)
     
     print(f"✅ Özellik matrisi oluşturuldu: {X.shape}")
     print(f"   📊 Boyut: {X.shape[0]} örnek × {X.shape[1]} özellik")
+    print(f"   🔧 Matrix tipi: {'Sparse' if hasattr(X, 'toarray') else 'Dense'}")
     
     return X, y, feature_names, column_info
 
@@ -306,7 +410,13 @@ def save_features(X: np.ndarray, y: np.ndarray, feature_names: list,
     ensure_directory_exists(output_dir)
     
     # Özellik matrisini kaydet
-    X_df = pd.DataFrame(X, columns=feature_names)
+    if hasattr(X, 'toarray'):  # Sparse matrix
+        print("⚠️  Sparse matrix CSV olarak kaydediliyor (büyük dosya olabilir)")
+        X_dense = X.toarray()
+        X_df = pd.DataFrame(X_dense, columns=feature_names)
+    else:
+        X_df = pd.DataFrame(X, columns=feature_names)
+    
     X_path = os.path.join(output_dir, 'X_model_ready.csv')
     X_df.to_csv(X_path, index=False, encoding='utf-8-sig')
     print(f"✅ Özellik matrisi kaydedildi: {X_path}")
@@ -389,11 +499,27 @@ def main():
         help='Çoklu değerli alanlar için en sık görülen kaç öğe (varsayılan: 50)'
     )
     
+    parser.add_argument(
+        '--min_freq',
+        type=int,
+        default=10,
+        help='Nadir kategoriler için minimum frekans eşiği (varsayılan: 10)'
+    )
+    
+    parser.add_argument(
+        '--text_mode',
+        choices=['mlbin', 'tfidf'],
+        default='mlbin',
+        help='Metin özellik çıkarma modu: mlbin (multi-label binary) veya tfidf (varsayılan: mlbin)'
+    )
+    
     args = parser.parse_args()
     
     print("🚀 Fiziksel Tıp & Rehabilitasyon Özellik Mühendisliği Script'i Başlatılıyor...")
     print(f"📁 Input CSV: {args.input_csv}")
     print(f"🔢 Top-K: {args.top_k}")
+    print(f"📊 Min Freq: {args.min_freq}")
+    print(f"📝 Text Mode: {args.text_mode}")
     
     # Çıktı dizinini hazırla
     output_dir = 'data/processed'
@@ -403,7 +529,7 @@ def main():
     df = load_data(args.input_csv)
     
     # Özellik matrisini oluştur
-    X, y, feature_names, column_info = build_features(df, top_k=args.top_k)
+    X, y, feature_names, column_info = build_features(df, top_k=args.top_k, min_freq=args.min_freq, text_mode=args.text_mode)
     
     # Sonuçları kaydet
     print(f"\n💾 Özellik matrisi kaydediliyor...")

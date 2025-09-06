@@ -153,6 +153,23 @@ python src/01_eda.py --excel-path data/veri.xlsx --sheet "Veri_Sayfası"
 python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --top_k 30
 ```
 
+### Gelişmiş Seçenekler
+
+**KNNImputer ile doldurma**
+```bash
+python src/02_preprocess.py --excel-path data/Talent_Academy_Case_DT_2025.xlsx --sheet Sheet1 --imputer knn
+```
+
+**Nadir kategorileri birleştirme (min_freq=20)**
+```bash
+python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --top_k 50 --min_freq 20
+```
+
+**Tanılar için TF-IDF modu**
+```bash
+python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --text_mode tfidf
+```
+
 ### Yardım almak için
 ```bash
 python src/01_eda.py --help
