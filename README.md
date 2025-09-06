@@ -1,7 +1,7 @@
 # Pusula Case Study
 
 **Ad Soyad:** Halit Mert Artun  
-**E-posta:** halitmert.artun@example.com  
+**E-posta:** halitmertartun@outlook.com  
 
 ![Python](https://img.shields.io/badge/python-v3.10+-blue.svg)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.2+-orange.svg)
@@ -187,9 +187,10 @@ print(f"RMSE: {mean_squared_error(y_test, y_pred, squared=False):.2f} seans")
 </div>
 
 ### Özellik Matrisi
-- **Boyut**: 2235 örnek × 200+ özellik
+- **Boyut**: 2235 örnek × değişken özellik sayısı
 - **Özellik Tipleri**: Sayısal, kategorik (one-hot), çoklu etiket (binary)
 - **Hedef**: Tedavi süresi (seans sayısı)
+- **Not**: Özellik sayısı seçilen moda göre değişir (varsayılan ML-binary ≈ 374; --min_freq azaltır; --text_mode tfidf artırır)
 
 ## 📈 Görselleştirmeler
 
@@ -268,7 +269,7 @@ python src/03_build_features.py --help
 ## 📞 İletişim
 
 Herhangi bir sorun veya soru için:
-- **E-posta**: halitmert.artun@example.com
+- **E-posta**: halitmertartun@outlook.com
 - **GitHub Issues**: Bu repository'de issue açabilirsiniz
 
 ## 📄 Lisans
