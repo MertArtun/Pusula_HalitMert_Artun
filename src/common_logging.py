@@ -62,12 +62,3 @@ logger = logging.getLogger(__name__)
 eda_logger = setup_logger('eda_script')
 preprocess_logger = setup_logger('preprocess_script') 
 features_logger = setup_logger('features_script')
-
-
-if __name__ == "__main__":
-    # Test logging
-    logger.info("Common logging modülü test ediliyor...")
-    eda_logger.info("EDA logger test")
-    preprocess_logger.info("Preprocess logger test")
-    features_logger.info("Features logger test")
-    logger.info("Logging test tamamlandı!")
