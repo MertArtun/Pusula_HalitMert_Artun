@@ -1,0 +1,2 @@
+﻿total_features,total_samples,numeric_features,count_features,categorical_features,multilabel_features,target_mean,target_std,target_min,target_max
+374,2235,2,4,264,104,14.570917225950783,3.724488741377444,1.0,37.0
