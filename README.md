@@ -275,13 +275,6 @@ Herhangi bir sorun veya soru için:
 
 Bu proje MIT lisansı altında lisanslanmıştır.
 
-## Submission Checklist
-- [x] Repo adı: Pusula_Ad_Soyad
-- [x] README başında ad-soyad-e-posta
-- [x] Rapor(lar) başında ad-soyad-e-posta
-- [x] Çalıştırma adımları test edildi
-- [x] GitHub linki ilgili mail adresine gönderildi
-
 ---
 
 *Bu proje Fiziksel Tıp & Rehabilitasyon veri analizi kapsamında geliştirilmiştir.*
