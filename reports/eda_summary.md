@@ -1,3 +1,6 @@
+Ad Soyad: Halit Mert Artun  
+E-posta: halitmertartun@outlook.com
+
 # Fiziksel Tıp & Rehabilitasyon Veri Analizi - EDA Özeti
 
 ## 📊 Genel Bilgiler

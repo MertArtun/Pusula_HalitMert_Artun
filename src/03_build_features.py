@@ -31,6 +31,7 @@ from utils import (
     normalize_text_token,
     split_list
 )
+from common_logging import features_logger as logger
 
 
 def load_data(csv_path: str) -> pd.DataFrame:
@@ -45,13 +46,13 @@ def load_data(csv_path: str) -> pd.DataFrame:
     """
     try:
         df = pd.read_csv(csv_path)
-        print(f"✅ Veri başarıyla yüklendi: {df.shape[0]} satır, {df.shape[1]} sütun")
+        logger.info(f"✅ Veri başarıyla yüklendi: {df.shape[0]} satır, {df.shape[1]} sütun")
         return df
     except FileNotFoundError:
-        print(f"❌ Hata: CSV dosyası bulunamadı: {csv_path}")
+        logger.error(f"❌ Hata: CSV dosyası bulunamadı: {csv_path}")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Hata: CSV dosyası okunurken hata oluştu: {e}")
+        logger.error(f"❌ Hata: CSV dosyası okunurken hata oluştu: {e}")
         sys.exit(1)
 
 
@@ -515,11 +516,11 @@ def main():
     
     args = parser.parse_args()
     
-    print("🚀 Fiziksel Tıp & Rehabilitasyon Özellik Mühendisliği Script'i Başlatılıyor...")
-    print(f"📁 Input CSV: {args.input_csv}")
-    print(f"🔢 Top-K: {args.top_k}")
-    print(f"📊 Min Freq: {args.min_freq}")
-    print(f"📝 Text Mode: {args.text_mode}")
+    logger.info("🚀 Fiziksel Tıp & Rehabilitasyon Özellik Mühendisliği Script'i Başlatılıyor...")
+    logger.info(f"📁 Input CSV: {args.input_csv}")
+    logger.info(f"🔢 Top-K: {args.top_k}")
+    logger.info(f"📊 Min Freq: {args.min_freq}")
+    logger.info(f"📝 Text Mode: {args.text_mode}")
     
     # Çıktı dizinini hazırla
     output_dir = 'data/processed'
@@ -532,21 +533,21 @@ def main():
     X, y, feature_names, column_info = build_features(df, top_k=args.top_k, min_freq=args.min_freq, text_mode=args.text_mode)
     
     # Sonuçları kaydet
-    print(f"\n💾 Özellik matrisi kaydediliyor...")
+    logger.info("💾 Özellik matrisi kaydediliyor...")
     save_features(X, y, feature_names, column_info, output_dir)
     
-    print(f"\n✅ Özellik mühendisliği tamamlandı!")
-    print(f"📁 Çıktı dosyaları: {output_dir}/")
-    print("   - X_model_ready.csv: Özellik matrisi")
-    print("   - y.csv: Hedef değişken")
-    print("   - feature_info.csv: Özellik bilgileri")
-    print("   - feature_summary.csv: Özellik özeti")
+    logger.info("✅ Özellik mühendisliği tamamlandı!")
+    logger.info(f"📁 Çıktı dosyaları: {output_dir}/")
+    logger.info("   - X_model_ready.csv: Özellik matrisi")
+    logger.info("   - y.csv: Hedef değişken")
+    logger.info("   - feature_info.csv: Özellik bilgileri")
+    logger.info("   - feature_summary.csv: Özellik özeti")
     
-    print(f"\n📊 Final Özetler:")
-    print(f"   🎯 Örnekler: {len(y):,}")
-    print(f"   🔧 Özellikler: {len(feature_names):,}")
-    print(f"   📈 Hedef ortalama: {y.mean():.2f}")
-    print(f"   📉 Hedef std: {y.std():.2f}")
+    logger.info("📊 Final Özetler:")
+    logger.info(f"   🎯 Örnekler: {len(y):,}")
+    logger.info(f"   🔧 Özellikler: {len(feature_names):,}")
+    logger.info(f"   📈 Hedef ortalama: {y.mean():.2f}")
+    logger.info(f"   📉 Hedef std: {y.std():.2f}")
 
 
 if __name__ == "__main__":

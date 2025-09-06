@@ -30,6 +30,7 @@ from utils import (
     get_categorical_summary,
     ensure_directory_exists
 )
+from common_logging import eda_logger as logger
 
 # Türkçe font ayarları
 plt.rcParams['font.family'] = ['DejaVu Sans']
@@ -53,13 +54,13 @@ def load_data(excel_path: str, sheet_name: str) -> pd.DataFrame:
     """
     try:
         df = pd.read_excel(excel_path, sheet_name=sheet_name)
-        print(f"✅ Veri başarıyla yüklendi: {df.shape[0]} satır, {df.shape[1]} sütun")
+        logger.info(f"✅ Veri başarıyla yüklendi: {df.shape[0]} satır, {df.shape[1]} sütun")
         return df
     except FileNotFoundError:
-        print(f"❌ Hata: Excel dosyası bulunamadı: {excel_path}")
+        logger.error(f"❌ Hata: Excel dosyası bulunamadı: {excel_path}")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Hata: Excel dosyası okunurken hata oluştu: {e}")
+        logger.error(f"❌ Hata: Excel dosyası okunurken hata oluştu: {e}")
         sys.exit(1)
 
 
@@ -80,16 +81,16 @@ def apply_basic_transformations(df: pd.DataFrame) -> pd.DataFrame:
         df_transformed['TedaviSuresi_num'] = df_transformed['TedaviSuresi'].apply(
             parse_tedavi_suresi_to_int
         )
-        print(f"✅ TedaviSuresi -> TedaviSuresi_num dönüşümü tamamlandı")
-        print(f"   Başarılı parse: {df_transformed['TedaviSuresi_num'].notna().sum()} / {len(df_transformed)}")
+        logger.info(f"✅ TedaviSuresi -> TedaviSuresi_num dönüşümü tamamlandı")
+        logger.info(f"   Başarılı parse: {df_transformed['TedaviSuresi_num'].notna().sum()} / {len(df_transformed)}")
     
     # Uygulama süresi dönüşümü
     if 'UygulamaSuresi' in df_transformed.columns:
         df_transformed['UygulamaSuresi_dk'] = df_transformed['UygulamaSuresi'].apply(
             parse_sure_to_minutes
         )
-        print(f"✅ UygulamaSuresi -> UygulamaSuresi_dk dönüşümü tamamlandı")
-        print(f"   Başarılı parse: {df_transformed['UygulamaSuresi_dk'].notna().sum()} / {len(df_transformed)}")
+        logger.info(f"✅ UygulamaSuresi -> UygulamaSuresi_dk dönüşümü tamamlandı")
+        logger.info(f"   Başarılı parse: {df_transformed['UygulamaSuresi_dk'].notna().sum()} / {len(df_transformed)}")
     
     # Çoklu değerli alanlar için sayı sütunları
     multi_value_columns = ['KronikHastalik', 'Alerji', 'Tanilar', 'UygulamaYerleri']
@@ -97,7 +98,7 @@ def apply_basic_transformations(df: pd.DataFrame) -> pd.DataFrame:
     
     if existing_multi_cols:
         df_transformed = add_count_columns(df_transformed, existing_multi_cols)
-        print(f"✅ Çoklu değerli alanlar için sayı sütunları eklendi: {existing_multi_cols}")
+        logger.info(f"✅ Çoklu değerli alanlar için sayı sütunları eklendi: {existing_multi_cols}")
     
     return df_transformed
 
@@ -397,9 +398,9 @@ def main():
     
     args = parser.parse_args()
     
-    print("🚀 Fiziksel Tıp & Rehabilitasyon EDA Script'i Başlatılıyor...")
-    print(f"📁 Excel Dosyası: {args.excel_path}")
-    print(f"📄 Sheet: {args.sheet}")
+    logger.info("🚀 Fiziksel Tıp & Rehabilitasyon EDA Script'i Başlatılıyor...")
+    logger.info(f"📁 Excel Dosyası: {args.excel_path}")
+    logger.info(f"📄 Sheet: {args.sheet}")
     
     # Çıktı dizinini hazırla
     output_dir = 'reports'
@@ -409,25 +410,25 @@ def main():
     df = load_data(args.excel_path, args.sheet)
     
     # Temel dönüşümleri uygula
-    print("\n🔄 Temel dönüşümler uygulanıyor...")
+    logger.info("🔄 Temel dönüşümler uygulanıyor...")
     df_transformed = apply_basic_transformations(df)
     
     # Analizleri yap
-    print("\n📊 Analizler yapılıyor...")
+    logger.info("📊 Analizler yapılıyor...")
     generate_missing_analysis(df_transformed, output_dir)
     generate_categorical_analysis(df_transformed, output_dir)
     generate_top_items_analysis(df_transformed, output_dir)
     
     # Görselleştirmeler oluştur
-    print("\n📈 Görselleştirmeler oluşturuluyor...")
+    logger.info("📈 Görselleştirmeler oluşturuluyor...")
     create_visualizations(df_transformed, output_dir)
     
     # Özet rapor oluştur
-    print("\n📝 Özet rapor oluşturuluyor...")
+    logger.info("📝 Özet rapor oluşturuluyor...")
     generate_eda_summary(df_transformed, output_dir)
     
-    print(f"\n✅ EDA tamamlandı! Tüm çıktılar '{output_dir}' klasöründe.")
-    print(f"📋 Özet rapor: {output_dir}/eda_summary.md")
+    logger.info(f"✅ EDA tamamlandı! Tüm çıktılar '{output_dir}' klasöründe.")
+    logger.info(f"📋 Özet rapor: {output_dir}/eda_summary.md")
 
 
 if __name__ == "__main__":

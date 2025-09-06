@@ -1,8 +1,11 @@
 # Pusula Fiziksel Tıp & Rehabilitasyon Veri Analizi
 
-![Python](https://img.shields.io/badge/python-v3.8+-blue.svg)
-![Status](https://img.shields.io/badge/status-ready-brightgreen.svg)
+![Python](https://img.shields.io/badge/python-v3.10+-blue.svg)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.2+-orange.svg)
+![pandas](https://img.shields.io/badge/pandas-1.5+-purple.svg)
+![Status](https://img.shields.io/badge/status-production--ready-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![GitHub repo size](https://img.shields.io/github/repo-size/MertArtun/Pusula_HalitMert_Artun)
 
 **Geliştirici**: Halit Mert Artun  
 **E-posta**: halitmert.artun@example.com
@@ -18,23 +21,36 @@ Bu proje, 2235 satır × 13 sütunluk fiziksel tıp ve rehabilitasyon verisini a
 - **Türkçe Raporlar**: Tüm çıktılar Türkçe etiketlerle
 - **Hata Yönetimi**: Kullanıcı dostu hata mesajları
 
-## 🗂️ Veri Yapısı
+## 🔄 Veri İşleme Pipeline'ı
 
-| Sütun | Açıklama | Tip |
-|-------|----------|-----|
-| **HastaNo** | Hasta kimlik numarası | ID |
-| **Yas** | Hasta yaşı | Sayısal |
-| **Cinsiyet** | Hasta cinsiyeti | Kategorik |
-| **KanGrubu** | Kan grubu | Kategorik |
-| **Uyruk** | Uyruk bilgisi | Kategorik |
-| **KronikHastalik** | Kronik hastalıklar | Çoklu değerli |
-| **Bolum** | Tedavi bölümü | Kategorik |
-| **Alerji** | Alerji bilgileri | Çoklu değerli |
-| **Tanilar** | Tanı bilgileri | Çoklu değerli |
-| **TedaviAdi** | Tedavi adı | Kategorik |
-| **TedaviSuresi** | Tedavi süresi ("15 Seans" formatında) | **HEDEF** |
-| **UygulamaYerleri** | Uygulama yerleri | Çoklu değerli |
-| **UygulamaSuresi** | Uygulama süresi | Süre |
+```mermaid
+graph LR
+    A["📊 Excel Veri<br/>(2235×13)"] --> B["🔬 EDA<br/>(01_eda.py)"]
+    A --> C["🧹 Temizleme<br/>(02_preprocess.py)"]
+    
+    B --> D["📈 Raporlar<br/>& Görseller"]
+    C --> E["✨ Temiz Veri<br/>(clean_minimal.csv)"]
+    E --> F["🔧 Özellik Mühendisliği<br/>(03_build_features.py)"]
+    
+    F --> G["🎯 Model-Ready<br/>(X: 2235×159+)<br/>(y: 2235×1)"]
+    
+    C -.->|"KNN Imputer"| H["🔧 Gelişmiş<br/>Imputation"]
+    F -.->|"TF-IDF Mode"| I["📝 Text Features<br/>(777 özellik)"]
+    F -.->|"Min Freq"| J["📊 Rare Category<br/>Folding"]
+```
+
+## 🗂️ Veri Sözlüğü
+
+| Sütun | Açıklama | Tip | Örnek Değerler |
+|-------|----------|-----|---------------|
+| **HastaNo** | Hasta kimlik numarası | ID | 1, 2, 3... |
+| **Yas** | Hasta yaşı (yıl) | Sayısal | 25, 45, 67 |
+| **Cinsiyet** | Hasta cinsiyeti | Kategorik | Kadın, Erkek |
+| **KanGrubu** | Kan grubu bilgisi | Kategorik | A Rh+, 0 Rh-, AB Rh+ |
+| **TedaviSuresi** | **🎯 HEDEF:** Tedavi süresi | Sayısal | "15 Seans" → 15 |
+| **Tanilar** | Hastalık tanıları | Çoklu değerli | "DORSALJİ, Lumbalji" |
+
+> **💡 Not:** Toplam 13 sütun, 2235 hasta. Çoklu değerli alanlar virgülle ayrılmış (ör: "Diabetes, Hipertansiyon").
 
 ## 📁 Proje Yapısı
 
@@ -105,6 +121,33 @@ python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --t
 ```
 **Çıktılar:** Model-ready `X_model_ready.csv` ve `y.csv` dosyaları
 
+### 🤖 Opsiyonel Model Eğitimi
+
+Model-ready veriler oluşturulduktan sonra, isteğe bağlı olarak makine öğrenmesi modeli eğitebilirsiniz:
+
+```python
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Veriyi yükle
+X = pd.read_csv('data/processed/X_model_ready.csv')
+y = pd.read_csv('data/processed/y.csv')['TedaviSuresi_num']
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Model eğit
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Tahmin ve değerlendirme
+y_pred = model.predict(X_test)
+print(f"R² Score: {r2_score(y_test, y_pred):.3f}")
+print(f"RMSE: {mean_squared_error(y_test, y_pred, squared=False):.2f} seans")
+```
+
 ## 🔧 Veri Dönüşüm Özellikleri
 
 ### Temel Dönüşümler
@@ -126,6 +169,20 @@ python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --t
 - **En sık kronik hastalık**: Aritmi (395 hasta)
 - **En sık tanı**: DORSALJİ (695 hasta)
 - **En sık uygulama yeri**: Bel (543 hasta)
+
+### 📈 Veri Görselleştirmeleri
+
+#### Hasta Yaş Dağılımı
+<div align="center">
+  <img src="reports/figures/hist_yas.png" alt="Hasta Yaş Dağılımı" width="600"/>
+  <p><em>Yaş dağılımı: Ortalama ~45 yaş, normal dağılım benzeri</em></p>
+</div>
+
+#### Bölümlere Göre Tedavi Süresi
+<div align="center">
+  <img src="reports/figures/box_tedavi_by_bolum.png" alt="Bölümlere Göre Tedavi Süresi" width="700"/>
+  <p><em>Tedavi süreleri bölümlere göre değişiklik gösteriyor</em></p>
+</div>
 
 ### Özellik Matrisi
 - **Boyut**: 2235 örnek × 200+ özellik
@@ -153,22 +210,28 @@ python src/01_eda.py --excel-path data/veri.xlsx --sheet "Veri_Sayfası"
 python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --top_k 30
 ```
 
-### Gelişmiş Seçenekler
+### 🚀 Gelişmiş Seçenekler
 
-**KNNImputer ile doldurma**
+#### 1. KNN Imputation (Daha Akıllı Eksik Değer Doldurma)
 ```bash
+# K-nearest neighbors ile sayısal eksik değer doldurma
 python src/02_preprocess.py --excel-path data/Talent_Academy_Case_DT_2025.xlsx --sheet Sheet1 --imputer knn
 ```
+**Avantaj:** Median'dan daha sophistike, benzer hastaların değerlerini kullanır.
 
-**Nadir kategorileri birleştirme (min_freq=20)**
+#### 2. Nadir Kategori Birleştirme (Gürültü Azaltma)
 ```bash
+# 20'den az görülen kategorileri "Diger" altında topla
 python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --top_k 50 --min_freq 20
 ```
+**Sonuç:** 159 → 139 özellik (% 12.6 azalma), daha temiz model.
 
-**Tanılar için TF-IDF modu**
+#### 3. TF-IDF Text Features (Gelişmiş Metin Analizi)
 ```bash
+# Tanılar sütunu için TF-IDF n-gram özellikleri
 python src/03_build_features.py --input-csv data/processed/clean_minimal.csv --text_mode tfidf
 ```
+**Sonuç:** 159 → 777 özellik (sparse matrix), daha zengin metin temsili.
 
 ### Yardım almak için
 ```bash

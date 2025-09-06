@@ -28,6 +28,7 @@ from utils import (
     add_count_columns,
     ensure_directory_exists
 )
+from common_logging import preprocess_logger as logger
 
 
 def load_data(excel_path: str, sheet_name: str) -> pd.DataFrame:
@@ -43,13 +44,13 @@ def load_data(excel_path: str, sheet_name: str) -> pd.DataFrame:
     """
     try:
         df = pd.read_excel(excel_path, sheet_name=sheet_name)
-        print(f"✅ Veri başarıyla yüklendi: {df.shape[0]} satır, {df.shape[1]} sütun")
+        logger.info(f"✅ Veri başarıyla yüklendi: {df.shape[0]} satır, {df.shape[1]} sütun")
         return df
     except FileNotFoundError:
-        print(f"❌ Hata: Excel dosyası bulunamadı: {excel_path}")
+        logger.error(f"❌ Hata: Excel dosyası bulunamadı: {excel_path}")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Hata: Excel dosyası okunurken hata oluştu: {e}")
+        logger.error(f"❌ Hata: Excel dosyası okunurken hata oluştu: {e}")
         sys.exit(1)
 
 
@@ -65,7 +66,7 @@ def apply_data_transformations(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_clean = df.copy()
     
-    print("🔄 Veri dönüşümleri uygulanıyor...")
+    logger.info("🔄 Veri dönüşümleri uygulanıyor...")
     
     # 1. Hedef değişken dönüşümü
     if 'TedaviSuresi' in df_clean.columns:
@@ -333,10 +334,10 @@ def main():
     
     args = parser.parse_args()
     
-    print("🚀 Fiziksel Tıp & Rehabilitasyon Veri Temizleme Script'i Başlatılıyor...")
-    print(f"📁 Excel Dosyası: {args.excel_path}")
-    print(f"📄 Sheet: {args.sheet}")
-    print(f"🔧 Imputer: {args.imputer}")
+    logger.info("🚀 Fiziksel Tıp & Rehabilitasyon Veri Temizleme Script'i Başlatılıyor...")
+    logger.info(f"📁 Excel Dosyası: {args.excel_path}")
+    logger.info(f"📄 Sheet: {args.sheet}")
+    logger.info(f"🔧 Imputer: {args.imputer}")
     
     # Çıktı dizinini hazırla
     output_dir = 'data/processed'
@@ -358,14 +359,14 @@ def main():
     validate_processed_data(df_clean, df_model_ready)
     
     # Verileri kaydet
-    print(f"\n💾 Veriler kaydediliyor...")
+    logger.info("💾 Veriler kaydediliyor...")
     save_processed_data(df_clean, df_model_ready, output_dir)
     
-    print(f"\n✅ Veri temizleme tamamlandı!")
-    print(f"📁 Çıktı dosyaları: {output_dir}/")
-    print("   - clean_minimal.csv: Temel temizlik uygulanmış veri")
-    print("   - model_ready_minimal.csv: Model için hazır veri")
-    print("   - column_info.csv: Sütun bilgileri")
+    logger.info("✅ Veri temizleme tamamlandı!")
+    logger.info(f"📁 Çıktı dosyaları: {output_dir}/")
+    logger.info("   - clean_minimal.csv: Temel temizlik uygulanmış veri")
+    logger.info("   - model_ready_minimal.csv: Model için hazır veri")
+    logger.info("   - column_info.csv: Sütun bilgileri")
 
 
 if __name__ == "__main__":
