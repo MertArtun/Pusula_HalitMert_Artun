@@ -1,4 +1,7 @@
-# Pusula Fiziksel Tıp & Rehabilitasyon Veri Analizi
+# Pusula Case Study
+
+**Ad Soyad:** Halit Mert Artun  
+**E-posta:** halitmert.artun@example.com  
 
 ![Python](https://img.shields.io/badge/python-v3.10+-blue.svg)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.2+-orange.svg)
@@ -7,12 +10,11 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![GitHub repo size](https://img.shields.io/github/repo-size/MertArtun/Pusula_HalitMert_Artun)
 
-**Geliştirici**: Halit Mert Artun  
-**E-posta**: halitmert.artun@example.com
-
 ## 📋 Proje Özeti
 
 Bu proje, 2235 satır × 13 sütunluk fiziksel tıp ve rehabilitasyon verisini analiz ederek model-ready özellik matrisi oluşturmayı amaçlamaktadır. Hedef değişken olarak tedavi süresi (seans sayısı) kullanılmaktadır.
+
+⚠️ **Not:** Bu case study'de model kurmak zorunlu değildir; bu repo veriyi model-ready hâle getirmek için hazırlanmıştır.
 
 ### 🎯 Temel Özellikler
 - **Kapsamlı EDA**: Eksik değer analizi, görselleştirmeler, kategorik analiz
@@ -87,7 +89,7 @@ Pusula_HalitMert_Artun/
 ### 1. Kurulum
 ```bash
 # Repository'yi klonla
-git clone https://github.com/username/Pusula_HalitMert_Artun.git
+git clone https://github.com/MertArtun/Pusula_HalitMert_Artun.git
 cd Pusula_HalitMert_Artun
 
 # Sanal ortam oluştur
@@ -272,6 +274,13 @@ Herhangi bir sorun veya soru için:
 ## 📄 Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır.
+
+## Submission Checklist
+- [x] Repo adı: Pusula_Ad_Soyad
+- [x] README başında ad-soyad-e-posta
+- [x] Rapor(lar) başında ad-soyad-e-posta
+- [x] Çalıştırma adımları test edildi
+- [x] GitHub linki ilgili mail adresine gönderildi
 
 ---
 

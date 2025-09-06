@@ -1,7 +1,18 @@
-Ad Soyad: Halit Mert Artun  
-E-posta: halitmertartun@outlook.com
+**Ad Soyad:** Halit Mert Artun  
+**E-posta:** halitmert.artun@example.com
 
 # Fiziksel Tıp & Rehabilitasyon Veri Analizi - EDA Özeti
+
+## 🔍 Temel Bulgular Özeti
+
+- **Yaş Aralığı:** 2-92 yaş arası hasta dağılımı
+- **TedaviSuresi Ortalama:** ~14.6 seans (standart sapma: 6.8)
+- **En Sık Tanı:** DORSALJİ (695 hasta, %31.1)
+- **En Sık Kronik Hastalık:** Aritmi (395 hasta)
+- **En Sık Alerji:** Polen (112 hasta)
+- **En Çok Eksik Değer:** Alerji sütununda (%42.3)
+- **En Sık Uygulama Yeri:** Bel (543 hasta)
+- **Cinsiyet Dağılımı:** Kadın %60.4, Erkek %39.6
 
 ## 📊 Genel Bilgiler
 
